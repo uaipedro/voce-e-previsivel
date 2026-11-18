@@ -1,21 +1,27 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap");
 :root {
-  --bg: #0f1222;
-  --bg2: #181c33;
-  --card: #1f2441;
-  --line: #2f3660;
-  --text: #eef0ff;
-  --muted: #a3a9d1;
-  --accent: #ffd166;
-  --good: #06d6a0;
-  --bad: #ef476f;
-  --mid: #f4a259;
-  --blue: #4cc9f0;
-  --radius: 16px;
+  --bg: #08071c;
+  --bg2: #151238;
+  --card: rgba(26, 22, 66, .78);
+  --line: #362f74;
+  --text: #f1efff;
+  --muted: #b3aee6;
+  --accent: #ffcf5a;
+  --good: #3ee6a8;
+  --bad: #ff5c8a;
+  --mid: #ffa94d;
+  --blue: #7cdcff;
+  --radius: 18px;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(1100px 600px at 85% -10%, rgba(120, 70, 220, .28), transparent 70%),
+    radial-gradient(900px 500px at -10% 110%, rgba(20, 120, 170, .22), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+  min-height: 100vh;
   color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.45;
@@ -23,10 +29,25 @@ body {
 }
 a { color: var(--blue); }
 .wrap { max-width: 720px; margin: 0 auto; padding: 16px; }
+/* céu estrelado leve, só CSS */
+body::before {
+  content: ""; position: fixed; inset: -50%; z-index: -1; pointer-events: none; opacity: .55;
+  background-image:
+    radial-gradient(1.2px 1.2px at 20px 30px, #fff, transparent),
+    radial-gradient(1px 1px at 120px 80px, #cfd8ff, transparent),
+    radial-gradient(1.4px 1.4px at 200px 160px, #fff, transparent),
+    radial-gradient(1px 1px at 60px 210px, #ffd9f0, transparent),
+    radial-gradient(1px 1px at 260px 40px, #cfd8ff, transparent);
+  background-size: 300px 260px;
+  animation: deriva 120s linear infinite;
+}
+@keyframes deriva { to { transform: translate(300px, 260px); } }
+@media (prefers-reduced-motion: reduce) { body::before { animation: none; } }
+h1, h2, h3, .big { font-family: "Space Grotesk", system-ui, sans-serif; letter-spacing: -.01em; }
 header.top {
   display: flex; align-items: center; gap: 12px;
   padding: 12px 16px; border-bottom: 1px solid var(--line);
-  position: sticky; top: 0; background: rgba(15,18,34,.92); backdrop-filter: blur(6px); z-index: 5;
+  position: sticky; top: 0; background: rgba(8,7,28,.78); backdrop-filter: blur(10px); z-index: 5;
 }
 header.top a.back { text-decoration: none; color: var(--muted); font-size: 15px; }
 header.top h1 { font-size: 18px; margin: 0; }
@@ -35,16 +56,18 @@ p.lead { color: var(--muted); margin: 4px 0 16px; }
 .card {
   background: var(--card); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 16px; margin: 12px 0;
+  backdrop-filter: blur(8px); box-shadow: 0 10px 40px rgba(0, 0, 0, .25);
 }
 .btn {
   appearance: none; border: 0; border-radius: 12px; cursor: pointer;
-  background: var(--accent); color: #1b1b1b; font-weight: 700;
+  background: linear-gradient(180deg, #ffd978, #ffc23d); color: #1b1404; font-weight: 700;
+  box-shadow: 0 6px 20px rgba(255, 200, 80, .18);
   font-size: 17px; padding: 14px 18px; min-height: 48px;
   transition: transform .08s ease, filter .15s;
 }
 .btn:active { transform: scale(.97); }
-.btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
-.btn.blue { background: var(--blue); }
+.btn.ghost { background: rgba(255,255,255,.03); color: var(--text); border: 1px solid var(--line); box-shadow: none; }
+.btn.blue { background: var(--blue); color: #0b1a24; }
 .btn.good { background: var(--good); }
 .btn.bad { background: var(--bad); color: #fff; }
 .btn:disabled { opacity: .4; cursor: default; }

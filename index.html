@@ -2,52 +2,362 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Você é previsível?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <style>
-  .hero { padding: 28px 0 8px; }
-  .hero h1 { font-size: 34px; line-height: 1.1; margin: 0 0 10px; }
-  .hero h1 em { color: var(--accent); font-style: normal; }
-  a.game { display: flex; gap: 14px; align-items: center; text-decoration: none; color: var(--text); }
-  a.game:active { transform: scale(.98); }
-  .num { flex: 0 0 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; font-size: 28px; background: var(--bg2); }
-  a.game h2 { margin: 0; font-size: 19px; }
-  a.game p { margin: 2px 0 0; color: var(--muted); font-size: 14.5px; }
-  .step { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
-  footer { color: var(--muted); font-size: 13px; padding: 24px 0; text-align: center; }
+  html, body { height: 100%; overflow: hidden; touch-action: none; }
+  body { background: #07061a; }
+  body::before { display: none; }
+  canvas#cena { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .ui { position: fixed; inset: 0; pointer-events: none; }
+  .titulo { position: absolute; left: 0; right: 0; top: max(18px, env(safe-area-inset-top)); text-align: center; padding: 0 16px; }
+  .titulo h1 { font-family: "Space Grotesk", system-ui, sans-serif; font-size: clamp(34px, 7vw, 68px); line-height: 1; margin: 0;
+               letter-spacing: -.02em; text-shadow: 0 0 30px rgba(140, 100, 255, .5); }
+  .titulo h1 em { font-style: normal; background: linear-gradient(90deg, #ffcf5a, #ff7ab6, #7cdcff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .titulo p { margin: 10px auto 0; color: #b9b4ea; font-size: clamp(14px, 2.2vw, 18px); max-width: 560px; }
+  .dica { position: absolute; left: 0; right: 0; bottom: max(70px, calc(env(safe-area-inset-bottom) + 60px)); text-align: center; color: #b9b4ea; font-size: 14px;
+          opacity: .85; animation: pisca 2.4s ease-in-out infinite; }
+  @keyframes pisca { 50% { opacity: .35 } }
+  a.rotulo { position: absolute; left: 0; top: 0; pointer-events: auto; text-decoration: none; color: #fff; text-align: center;
+             transform: translate(-50%, 0); white-space: nowrap; padding: 6px 12px 8px; border-radius: 14px;
+             background: rgba(16, 12, 48, .55); border: 1px solid rgba(160, 140, 255, .35); backdrop-filter: blur(6px);
+             transition: opacity .3s, border-color .2s, background .2s; will-change: transform; }
+  a.rotulo:hover, a.rotulo.on { border-color: #ffcf5a; background: rgba(40, 28, 90, .75); }
+  a.rotulo small { display: block; font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: #ffcf5a; }
+  a.rotulo b { font-family: "Space Grotesk", system-ui, sans-serif; font-size: 16px; }
+  .rodape { position: absolute; left: 0; right: 0; bottom: max(14px, env(safe-area-inset-bottom)); display: flex; justify-content: center; gap: 10px; pointer-events: auto; }
+  .rodape button, .rodape a { font: inherit; font-size: 13.5px; color: #cfcaf6; background: rgba(16, 12, 48, .6); border: 1px solid rgba(160, 140, 255, .3);
+                              border-radius: 99px; padding: 8px 14px; text-decoration: none; cursor: pointer; }
+  .sobre { position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%); width: min(560px, calc(100% - 32px));
+           pointer-events: auto; background: rgba(16, 12, 48, .9); border: 1px solid rgba(160, 140, 255, .35); border-radius: 18px; padding: 16px 18px;
+           backdrop-filter: blur(10px); }
+  .sobre h3 { margin: 0 0 6px; color: #ffcf5a; font-size: 16px; }
+  .sobre p { margin: 6px 0; font-size: 15px; }
+  .veu { position: fixed; inset: 0; background: #07061a; opacity: 1; transition: opacity .8s ease; pointer-events: none; }
+  .veu.fora { opacity: 0; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <section class="hero">
+<canvas id="cena"></canvas>
+<div class="ui">
+  <div class="titulo">
     <h1>Você é <em>previsível</em>?</h1>
-    <p class="lead">Quatro jogos curtos contra uma IA. Nenhuma mágica: só probabilidade, dados e boas perguntas.</p>
-  </section>
-
-  <a class="card game" href="monty.html">
-    <div class="num">🚪</div>
-    <div><div class="step">1 · Sua intuição falha</div><h2>As Três Portas</h2><p>Um prêmio, três portas. Trocar ou ficar?</p></div>
-  </a>
-  <a class="card game" href="ppt.html">
-    <div class="num">✊</div>
-    <div><div class="step">2 · Você tem padrões</div><h2>Pedra, Papel e Tesoura</h2><p>Desafio de 50 rodadas: consegue ganhar mais do que a IA?</p></div>
-  </a>
-  <a class="card game" href="quem.html">
-    <div class="num">🕵️</div>
-    <div><div class="step">3 · A pergunta certa</div><h2>Quem é?</h2><p>Escolha um personagem em segredo. A IA adivinha em poucas perguntas.</p></div>
-  </a>
-  <a class="card game" href="termo.html">
-    <div class="num">🔤</div>
-    <div><div class="step">4 · Informação</div><h2>Palavra Secreta</h2><p>Você e a IA na mesma palavra. Com ou sem a ajuda dela.</p></div>
-  </a>
-
-  <div class="card why">
+    <p>A esfera no centro tenta adivinhar para onde o seu dedo vai. Escolha um portal e desafie a IA.</p>
+  </div>
+  <div id="rotulos"></div>
+  <div class="dica" id="dica">toque num portal ✦ arraste para girar</div>
+  <div class="sobre hidden" id="sobre">
     <h3>O que liga tudo isso?</h3>
     <p>Uma máquina que decide bem usa <b>probabilidade</b> em vez de palpite, aprende <b>padrões</b> a partir de dados e faz as <b>perguntas</b> que mais reduzem a dúvida.</p>
     <p class="muted small">É isso que chamamos de IA: matemática, dados e computação. E dá para estudar tudo isso.</p>
   </div>
-  <footer>Feito para a turma do 3º ano 💛</footer>
+  <div class="rodape">
+    <button id="btnSobre">💡 O que é isso?</button>
+    <a href="simples.html">Versão leve</a>
+  </div>
 </div>
+<div class="veu" id="veu"></div>
+
+<script>
+  // sem WebGL ou se o 3D não carregar: vai para a versão leve
+  (function () {
+    try { const c = document.createElement('canvas'); if (!(c.getContext('webgl2') || c.getContext('webgl'))) throw 0; }
+    catch (e) { location.replace('simples.html'); }
+    setTimeout(() => { if (!window.__hubOK) location.replace('simples.html'); }, 9000);
+  })();
+</script>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js" } }</script>
+<script type="module">
+import * as THREE from 'three';
+
+const PORTAIS = [
+  { href: 'monty.html', passo: '1 · intuição', nome: '🚪 As Três Portas', cor: 0xffcf5a },
+  { href: 'ppt.html',   passo: '2 · padrões',  nome: '✊ Pedra, Papel e Tesoura', cor: 0xff6fa8 },
+  { href: 'quem.html',  passo: '3 · perguntas', nome: '🕵️ Quem é?', cor: 0x7cdcff },
+  { href: 'termo.html', passo: '4 · informação', nome: '🔤 Palavra Secreta', cor: 0x3ee6a8 },
+];
+const fraco = matchMedia('(pointer: coarse)').matches || innerWidth < 700;
+
+const canvas = document.getElementById('cena');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: !fraco, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, fraco ? 1.5 : 2));
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x07061a, 0.035);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+
+// ---------- textura de brilho ----------
+function glowTex(stops) {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  stops.forEach(([p, col]) => gr.addColorStop(p, col));
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(c);
+}
+const GLOW = glowTex([[0, 'rgba(255,255,255,1)'], [.25, 'rgba(255,255,255,.5)'], [1, 'rgba(255,255,255,0)']]);
+
+// ---------- fundo: nebulosa + estrelas ----------
+{
+  const geo = new THREE.SphereGeometry(80, 32, 16);
+  const mat = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, fog: false,
+    uniforms: { t: { value: 0 } },
+    vertexShader: `varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }`,
+    fragmentShader: `varying vec3 vP; uniform float t;
+      void main(){
+        float y = vP.y*.5+.5;
+        vec3 c = mix(vec3(.02,.02,.08), vec3(.10,.04,.22), smoothstep(.2,.9,y));
+        float n = sin(vP.x*3.+t*.05)*sin(vP.z*2.5-t*.04)*.5+.5;
+        c += vec3(.25,.08,.35)*pow(n,3.)*.35*smoothstep(.3,.7,y);
+        c += vec3(.03,.18,.28)*pow(1.-n,4.)*.25*(1.-y);
+        gl_FragColor = vec4(c,1.);
+      }`
+  });
+  scene.add(new THREE.Mesh(geo, mat));
+  scene.userData.ceu = mat;
+  const n = fraco ? 900 : 1800, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const r = 30 + Math.random() * 40, th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1);
+    pos.set([r * Math.sin(ph) * Math.cos(th), r * Math.cos(ph), r * Math.sin(ph) * Math.sin(th)], i * 3);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({ size: .35, map: GLOW, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xcfd8ff, fog: false })));
+}
+
+// ---------- o oráculo: esfera de partículas ----------
+const R = 1.6;
+const oraculo = new THREE.Group(); scene.add(oraculo);
+const orbMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  uniforms: { t: { value: 0 }, olho: { value: new THREE.Vector3(0, 0, 1) }, px: { value: renderer.getPixelRatio() } },
+  vertexShader: `
+    uniform float t; uniform vec3 olho; uniform float px; attribute float sd; varying float vA; varying float vM;
+    void main(){
+      vec3 p = position;
+      float d = sin(p.x*3.1+t*1.1)*sin(p.y*2.7-t*.9)*sin(p.z*3.3+t*.7);
+      float foco = smoothstep(.75, 1., dot(normalize(p), olho));
+      p *= 1. + d*.12 + foco*.18 + sin(t*2.+sd*6.28)*.015;
+      vec4 mv = modelViewMatrix * vec4(p,1.);
+      gl_Position = projectionMatrix * mv;
+      gl_PointSize = (1.4 + foco*2.2 + sd*1.2) * px * (10. / -mv.z);
+      vA = .35 + .65*(d*.5+.5); vM = foco;
+    }`,
+  fragmentShader: `
+    varying float vA; varying float vM;
+    void main(){
+      float r = length(gl_PointCoord-.5); if (r>.5) discard;
+      vec3 c = mix(vec3(.45,.35,1.), vec3(1.,.45,.75), vA);
+      c = mix(c, vec3(1.,.85,.4), vM);
+      gl_FragColor = vec4(c, (1.-r*2.)*(.75+vM*.25));
+    }`
+});
+{
+  const n = fraco ? 2600 : 5200, pos = new Float32Array(n * 3), sd = new Float32Array(n);
+  const ga = Math.PI * (3 - Math.sqrt(5));
+  for (let i = 0; i < n; i++) {           // espiral de fibonacci = pontos bem distribuídos
+    const y = 1 - (i / (n - 1)) * 2, r = Math.sqrt(1 - y * y), th = ga * i;
+    pos.set([Math.cos(th) * r * R, y * R, Math.sin(th) * r * R], i * 3); sd[i] = Math.random();
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('sd', new THREE.BufferAttribute(sd, 1));
+  oraculo.add(new THREE.Points(g, orbMat));
+}
+const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: 0x6b4cff, transparent: true, opacity: .35, depthWrite: false, blending: THREE.AdditiveBlending }));
+halo.scale.setScalar(R * 5.5); oraculo.add(halo);
+const pupila = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: 0xffd27a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+pupila.scale.setScalar(1.1); oraculo.add(pupila);
+const anel = new THREE.Mesh(new THREE.TorusGeometry(R * 1.55, .012, 8, 160), new THREE.MeshBasicMaterial({ color: 0x8f7bff, transparent: true, opacity: .45 }));
+anel.rotation.x = Math.PI / 2.25; oraculo.add(anel);
+
+// ---------- portais ----------
+scene.add(new THREE.AmbientLight(0x6a5acd, .9));
+const sol = new THREE.DirectionalLight(0xffe0c0, 1.6); sol.position.set(4, 8, 6); scene.add(sol);
+const luzOrb = new THREE.PointLight(0xa58bff, 18, 14, 1.6); scene.add(luzOrb);
+
+const roda = new THREE.Group(); scene.add(roda);
+const ilhas = [];
+const plano = (c, e = .25) => new THREE.MeshStandardMaterial({ color: c, roughness: .55, metalness: .1, flatShading: true, emissive: c, emissiveIntensity: e });
+
+function letraTex(L, bg, fg) {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  g.fillStyle = bg; g.fillRect(0, 0, 128, 128);
+  g.fillStyle = fg; g.font = 'bold 84px "Space Grotesk", system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(L, 64, 70);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function emblema(i, cor) {
+  const g = new THREE.Group();
+  if (i === 0) {           // três portas, uma brilhando
+    [-0.62, 0, 0.62].forEach((x, k) => {
+      const porta = new THREE.Mesh(new THREE.BoxGeometry(.46, .82, .08), plano(k === 1 ? 0xffcf5a : 0x9a6a44, k === 1 ? .9 : .15));
+      porta.position.set(x, .45, 0); g.add(porta);
+      const mac = new THREE.Mesh(new THREE.SphereGeometry(.03, 8, 8), plano(0xffe9a8, 1)); mac.position.set(x + .14, .42, .05); g.add(mac);
+    });
+    g.userData.anima = (t) => { g.children[2].material.emissiveIntensity = .6 + Math.sin(t * 3) * .4; };
+  } else if (i === 1) {    // pedra, papel e tesoura girando
+    const pedra = new THREE.Mesh(new THREE.DodecahedronGeometry(.26, 0), plano(0xb7a3c9, .2));
+    const papel = new THREE.Mesh(new THREE.BoxGeometry(.48, .62, .02), plano(0xf3f0ff, .35));
+    const tes = new THREE.Group();
+    [.5, -.5].forEach(a => { const l = new THREE.Mesh(new THREE.BoxGeometry(.07, .62, .04), plano(0xff6fa8, .6)); l.rotation.z = a; tes.add(l); });
+    const itens = [pedra, papel, tes]; itens.forEach(o => g.add(o));
+    g.userData.anima = (t) => itens.forEach((o, k) => {
+      const a = t * .9 + k * 2.094; o.position.set(Math.cos(a) * .5, .55 + Math.sin(a * 2) * .06, Math.sin(a) * .5); o.rotation.y = t * 1.5 + k;
+    });
+  } else if (i === 2) {    // 16 pessoas: metade some (perguntas cortam pela metade)
+    const cabecas = [];
+    for (let k = 0; k < 16; k++) {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(.09, 12, 10), plano(0x7cdcff, .5));
+      m.position.set(((k % 4) - 1.5) * .27, .2 + Math.floor(k / 4) * .27, 0); g.add(m); cabecas.push(m);
+    }
+    g.userData.anima = (t) => {
+      const fase = Math.floor(t / 1.6) % 5, vivos = 16 >> fase;     // 16 → 8 → 4 → 2 → 1
+      cabecas.forEach((m, k) => { const on = k < vivos; m.scale.setScalar(THREE.MathUtils.lerp(m.scale.x, on ? 1 : .35, .08)); m.material.emissiveIntensity = on ? .8 : .05; });
+    };
+  } else {                 // peças de letra com as cores do jogo
+    const L = 'TARSO', C = ['#3a3f5c', '#ffa94d', '#ffa94d', '#3a3f5c', '#3ee6a8'], F = ['#cfd3ee', '#2b1a05', '#2b1a05', '#cfd3ee', '#0b2a20'];
+    for (let k = 0; k < 5; k++) {
+      const tex = letraTex(L[k], C[k], F[k]);
+      const m = new THREE.Mesh(new THREE.BoxGeometry(.3, .3, .08), [plano(0x2a2550, .1), plano(0x2a2550, .1), plano(0x2a2550, .1), plano(0x2a2550, .1),
+        new THREE.MeshStandardMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: .55, roughness: .6 }), plano(0x2a2550, .1)]);
+      m.position.set((k - 2) * .34, .5, 0); g.add(m);
+    }
+    g.userData.anima = (t) => g.children.forEach((m, k) => { m.position.y = .5 + Math.sin(t * 2 + k * .7) * .07; m.rotation.x = Math.sin(t * 1.3 + k) * .25; });
+  }
+  return g;
+}
+PORTAIS.forEach((p, i) => {
+  const ilha = new THREE.Group();
+  const ang = i * Math.PI / 2 + Math.PI / 4;
+  const rocha = new THREE.Mesh(new THREE.ConeGeometry(.95, 1.25, 7, 1), plano(0x2c2160, .12));
+  rocha.rotation.x = Math.PI; rocha.position.y = -.62; ilha.add(rocha);
+  const topo = new THREE.Mesh(new THREE.CylinderGeometry(.98, .95, .14, 7), plano(0x4b3a9a, .2)); ilha.add(topo);
+  const aro = new THREE.Mesh(new THREE.TorusGeometry(1.05, .025, 8, 64), new THREE.MeshBasicMaterial({ color: p.cor, transparent: true, opacity: .8 }));
+  aro.rotation.x = Math.PI / 2; aro.position.y = .08; ilha.add(aro);
+  const brilho = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: p.cor, transparent: true, opacity: .35, depthWrite: false, blending: THREE.AdditiveBlending }));
+  brilho.scale.set(3.2, 2.2, 1); brilho.position.y = .5; ilha.add(brilho);
+  const em = emblema(i, p.cor); em.position.y = .08; ilha.add(em);
+  const alvo = new THREE.Mesh(new THREE.SphereGeometry(1.25, 8, 8), new THREE.MeshBasicMaterial({ visible: false }));
+  alvo.position.y = .3; alvo.userData.i = i; ilha.add(alvo);
+  roda.add(ilha);
+  // rótulo HTML (é um link de verdade, funciona mesmo sem acertar o 3D)
+  const a = document.createElement('a'); a.className = 'rotulo'; a.href = p.href;
+  a.innerHTML = `<small>${p.passo}</small><b>${p.nome}</b>`;
+  a.addEventListener('click', e => { e.preventDefault(); entrar(i); });
+  a.addEventListener('pointerenter', () => hover = i); a.addEventListener('pointerleave', () => hover = -1);
+  document.getElementById('rotulos').appendChild(a);
+  ilhas.push({ ilha, em, aro, brilho, alvo, a, fase: Math.random() * 6, ang });
+});
+
+// ---------- câmera e tamanho ----------
+let camDist = 12, camAlt = 3.2, retrato = false;
+function resize() {
+  const w = innerWidth, h = innerHeight, asp = w / h;
+  renderer.setSize(w, h, false); camera.aspect = asp;
+  retrato = asp < 0.9;
+  // retrato: as ilhas viram uma roda-gigante em volta do oráculo; afasta só o necessário para caber na largura
+  camDist = retrato ? 3.2 / (Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * asp) : 11.5;
+  camAlt = retrato ? 0.8 : 3.2;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+camera.position.set(0, camAlt, camDist);
+
+// ---------- interação ----------
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let rot = 0, vel = 0, arrastando = false, x0 = 0, xIni = 0, hover = -1, saindo = false, mexeu = false;
+const ptr = new THREE.Vector2(0, 0), ptrPrev = new THREE.Vector2(0, 0), ptrVel = new THREE.Vector2(), previsto = new THREE.Vector2();
+function setNdc(e) { ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); }
+function pick() {
+  ray.setFromCamera(ndc, camera);
+  const hit = ray.intersectObjects(ilhas.map(o => o.alvo))[0];
+  return hit ? hit.object.userData.i : -1;
+}
+canvas.addEventListener('pointerdown', e => { arrastando = true; x0 = xIni = e.clientX; vel = 0; canvas.setPointerCapture(e.pointerId); setNdc(e); ptr.copy(ndc); });
+canvas.addEventListener('pointermove', e => {
+  setNdc(e); ptr.copy(ndc); mexeu = true;
+  if (arrastando) { const dx = e.clientX - x0; x0 = e.clientX; vel = dx * .006; rot += vel; }
+  else { hover = pick(); canvas.style.cursor = hover >= 0 ? 'pointer' : 'grab'; }
+});
+canvas.addEventListener('pointerup', e => {
+  arrastando = false; setNdc(e);
+  if (Math.abs(e.clientX - xIni) < 8) { const i = pick(); if (i >= 0) entrar(i); }
+});
+document.getElementById('btnSobre').onclick = () => document.getElementById('sobre').classList.toggle('hidden');
+
+let voo = null;
+function entrar(i) {
+  if (saindo) return; saindo = true;
+  const w = new THREE.Vector3(); ilhas[i].ilha.getWorldPosition(w);
+  voo = { de: camera.position.clone(), para: retrato ? w.clone().add(new THREE.Vector3(0, .5, 3.6)) : w.clone().add(new THREE.Vector3(0, .9, 0)).add(w.clone().normalize().multiplyScalar(2.2)), olhar: w.clone().add(new THREE.Vector3(0, .5, 0)), t0: performance.now() };
+  document.getElementById('veu').classList.remove('fora');
+  setTimeout(() => location.href = PORTAIS[i].href, 850);
+}
+// voltar pelo botão "voltar" do celular não deve deixar a tela preta
+addEventListener('pageshow', () => { saindo = false; voo = null; camera.position.set(0, camAlt, camDist); document.getElementById('veu').classList.add('fora'); });
+
+// ---------- loop ----------
+const relogio = new THREE.Clock(), v3 = new THREE.Vector3(), tmp = new THREE.Vector3();
+const olho = new THREE.Vector3(0, 0, 1);
+function frame() {
+  const dt = Math.min(relogio.getDelta(), .05), t = relogio.elapsedTime;
+  if (!arrastando) { vel *= .94; rot += vel + dt * .07; }
+
+  // o oráculo "prevê" para onde o ponteiro vai: posição + velocidade
+  ptrVel.lerp(tmp.set((ptr.x - ptrPrev.x) / Math.max(dt, .001), (ptr.y - ptrPrev.y) / Math.max(dt, .001), 0), .15);
+  ptrPrev.copy(ptr);
+  if (!mexeu) ptr.set(Math.sin(t * .6) * .5, Math.cos(t * .45) * .25);    // sem ninguém mexendo: passeia sozinho
+  previsto.set(THREE.MathUtils.clamp(ptr.x + ptrVel.x * .35, -1.2, 1.2), THREE.MathUtils.clamp(ptr.y + ptrVel.y * .35, -1.2, 1.2));
+  v3.set(previsto.x, previsto.y, .5).unproject(camera).sub(camera.position).normalize();
+  const alvoOlho = camera.position.clone().add(v3.multiplyScalar(camera.position.length() * .75)).sub(oraculo.position).normalize();
+  olho.lerp(alvoOlho, .12).normalize();
+  orbMat.uniforms.olho.value.copy(olho);
+  pupila.position.copy(olho).multiplyScalar(R * 1.12);
+  pupila.scale.setScalar(1.0 + Math.sin(t * 4) * .1);
+  orbMat.uniforms.t.value = t; scene.userData.ceu.uniforms.t.value = t;
+  oraculo.position.y = .3 + Math.sin(t * .8) * .12;
+  anel.rotation.z = t * .2;
+  luzOrb.position.copy(oraculo.position);
+
+  ilhas.forEach((o, i) => {
+    const a = o.ang + rot, bob = Math.sin(t * .9 + o.fase) * .18;
+    if (retrato) o.ilha.position.set(Math.cos(a) * 2.45, Math.sin(a) * 3.7 + bob + .2, 0);
+    else o.ilha.position.set(Math.cos(a) * 4.4, bob - .2, Math.sin(a) * 4.4);
+
+    o.em.userData.anima(t);
+    const quente = hover === i;
+    o.ilha.scale.setScalar(THREE.MathUtils.lerp(o.ilha.scale.x, quente ? 1.12 : 1, .12));
+    o.brilho.material.opacity = THREE.MathUtils.lerp(o.brilho.material.opacity, quente ? .7 : .32, .1);
+    o.aro.rotation.z = t * (quente ? 1.2 : .3);
+    // rótulo segue a ilha na tela
+    o.ilha.getWorldPosition(tmp); tmp.y -= 1.0;
+    const atras = tmp.clone().sub(camera.position).dot(camera.getWorldDirection(v3)) < 0;
+    tmp.project(camera);
+    const z = o.ilha.getWorldPosition(new THREE.Vector3()).z;
+    const meia = (o.a.offsetWidth || 160) / 2 + 8;
+    const lx = THREE.MathUtils.clamp((tmp.x * .5 + .5) * innerWidth, meia, innerWidth - meia);
+    o.a.style.transform = `translate(${lx}px, ${(-tmp.y * .5 + .5) * innerHeight}px) translate(-50%, 0) scale(${z > -0.01 ? 1 : .86})`;
+    o.a.style.opacity = atras ? 0 : (z > -1 ? 1 : .55);
+    o.a.style.zIndex = z > -0.01 ? 2 : 1;
+    o.a.classList.toggle('on', quente);
+  });
+
+  if (voo) {
+    const k = Math.min((performance.now() - voo.t0) / 850, 1), e = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    camera.position.lerpVectors(voo.de, voo.para, e); camera.lookAt(voo.olhar);
+  } else {
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, ptr.x * .6, .03);
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, camAlt + ptr.y * .3, .03);
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, camDist, .05);
+    camera.lookAt(0, retrato ? .2 : .1, 0);
+  }
+  renderer.render(scene, camera);
+  if (!window.__hubOK) { window.__hubOK = true; document.getElementById('veu').classList.add('fora'); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+setTimeout(() => document.getElementById('dica').style.display = 'none', 12000);
+</script>
 </body>
 </html>
