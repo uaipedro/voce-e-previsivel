@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Pedra, Papel e Tesoura</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .score { display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; gap: 8px; }
+  .score div { background: var(--bg2); border-radius: 12px; padding: 10px 4px; }
+  .score b { display: block; font-size: 30px; }
+  .arena { display: flex; justify-content: space-around; align-items: center; font-size: 64px; min-height: 110px; }
+  .arena small { display: block; font-size: 13px; color: var(--muted); text-align: center; }
+  .moves { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .moves .btn { font-size: 44px; padding: 14px 0; background: var(--card); border: 2px solid var(--line); }
+  .res { text-align: center; font-weight: 800; font-size: 20px; min-height: 30px; }
+  .strip { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 8px; }
+  .strip i { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+  .pred { text-align: center; color: var(--muted); min-height: 22px; font-size: 15px; }
+</style>
+</head>
+<body>
+<header class="top"><a class="back" href="index.html">← Início</a><h1>✊ Pedra, Papel e Tesoura</h1></header>
+<div class="wrap">
+  <p class="lead center">Jogue umas 30 rodadas. A IA começa no chute e vai <b>aprendendo os seus padrões</b>.</p>
+  <div class="score">
+    <div>Você<b id="sV">0</b></div><div>Empate<b id="sE">0</b></div><div>IA<b id="sI">0</b></div>
+  </div>
+  <div class="arena"><div id="aV">❔<small>você</small></div><div style="font-size:22px;color:var(--muted)">vs</div><div id="aI">🤖<small>IA</small></div></div>
+  <div class="res" id="res">Escolha!</div>
+  <div class="pred" id="pred"></div>
+  <div class="moves">
+    <button class="btn" data-m="0">✊</button><button class="btn" data-m="1">✋</button><button class="btn" data-m="2">✌️</button>
+  </div>
+
+  <div class="card">
+    <b>Vitórias da IA nas últimas 20 rodadas</b>
+    <div class="stat" style="grid-template-columns:1fr 56px"><div class="bar"><span id="bIA" style="background:var(--bad)"></span></div><b id="pIA">–</b></div>
+    <p class="muted small" style="margin:0">Se fosse só sorte, a IA ganharia ~33%.</p>
+    <div class="strip" id="strip"></div>
+    <p class="muted small" style="margin:8px 0 0">🟩 você ganhou · 🟥 IA ganhou · ⬜ empate</p>
+  </div>
+
+  <div class="card hidden" id="viu">
+    <b>🔍 O que a IA percebeu em você</b>
+    <div id="padroes" style="margin-top:6px"></div>
+  </div>
+
+  <div class="row"><button class="btn ghost" id="reset">Recomeçar</button></div>
+
+  <div class="card why">
+    <h3>O que está por trás</h3>
+    <p>Pessoas acham que jogam aleatório, mas não jogam. Depois de perder, muita gente troca. Depois de ganhar, repete. E ninguém gosta de jogar a mesma coisa 3 vezes seguidas.</p>
+    <p>A IA só <b>conta</b>: "depois das últimas jogadas dele, o que ele costuma fazer?". Ela prevê a sua próxima jogada e joga o que ganha dela.</p>
+    <p class="muted small">É a mesma ideia do feed do TikTok: com dados suficientes sobre você, dá para prever o que você vai fazer.</p>
+  </div>
+</div>
+<script>
+const E = ['✊', '✋', '✌️'], NOME = ['pedra', 'papel', 'tesoura'];
+const ganhaDe = m => (m + 1) % 3; // papel ganha de pedra, etc.
+let hist, res, sc;
+const $ = id => document.getElementById(id);
+
+function reset() {
+  hist = []; res = []; sc = [0, 0, 0]; pontos = CTX.map(() => 0);
+  $('aV').innerHTML = '❔<small>você</small>'; $('aI').innerHTML = '🤖<small>IA</small>';
+  $('res').textContent = 'Escolha!'; $('pred').textContent = '';
+  atualiza();
+}
+// vários "detetives" de padrão; cada um olha um tipo de contexto
+// (suas últimas 1 ou 2 jogadas, ou sua jogada + o resultado da rodada)
+const CTX = [
+  { nome: 'm2', k: 2, f: h => h.v },
+  { nome: 'm1', k: 1, f: h => h.v },
+  { nome: 'r1', k: 1, f: h => h.v + ',' + h.r },
+  { nome: 'r2', k: 2, f: h => h.v + ',' + h.r },
+];
+let pontos;
+function previsao(ctx, H) {
+  if (H.length <= ctx.k) return null;
+  const alvo = H.slice(H.length - ctx.k).map(ctx.f).join('|'), c = [0, 0, 0];
+  for (let i = ctx.k; i < H.length; i++) if (H.slice(i - ctx.k, i).map(ctx.f).join('|') === alvo) c[H[i].v]++;
+  if (c[0] + c[1] + c[2] === 0) return null;
+  const mx = Math.max(...c), op = [0, 1, 2].filter(i => c[i] === mx);
+  return op[Math.floor(Math.random() * op.length)];
+}
+function prever() {
+  if (hist.length < 3) return null;
+  // usa o detetive que mais acertou nas últimas rodadas
+  let best = null, bp = -1e9;
+  CTX.forEach((c, i) => { const g = previsao(c, hist); if (g !== null && pontos[i] > bp) { bp = pontos[i]; best = g; } });
+  if (best === null) { const c = [0, 0, 0]; hist.forEach(h => c[h.v]++); best = c.indexOf(Math.max(...c)); }
+  return best;
+}
+function aprende(v) {
+  CTX.forEach((c, i) => { const g = previsao(c, hist); if (g !== null) pontos[i] = pontos[i] * 0.85 + (g === v ? 1 : -0.5); });
+}
+function jogar(v) {
+  const previsto = prever();
+  const ia = previsto === null ? Math.floor(Math.random() * 3) : ganhaDe(previsto);
+  aprende(v);
+  const r = v === ia ? 0 : (ganhaDe(ia) === v ? 1 : -1); // 1 você ganha, -1 IA ganha
+  hist.push({ v, r }); res.push(r);
+  sc[r === 1 ? 0 : r === 0 ? 1 : 2]++;
+  $('aV').innerHTML = `<span class="pop" style="display:inline-block">${E[v]}</span><small>você</small>`;
+  $('aI').innerHTML = `<span class="pop" style="display:inline-block">${E[ia]}</span><small>IA</small>`;
+  $('res').innerHTML = r === 1 ? '<span style="color:var(--good)">Você ganhou!</span>' : r === 0 ? 'Empate' : '<span style="color:var(--bad)">A IA ganhou!</span>';
+  $('pred').innerHTML = previsto === null ? 'A IA ainda está chutando…' :
+    (previsto === v ? `🎯 A IA <b>previu</b> que você ia jogar ${E[previsto]}` : `A IA achou que você ia jogar ${E[previsto]}`);
+  atualiza();
+}
+function atualiza() {
+  $('sV').textContent = sc[0]; $('sE').textContent = sc[1]; $('sI').textContent = sc[2];
+  const ult = res.slice(-20), w = ult.filter(r => r === -1).length;
+  const pct = ult.length ? Math.round(100 * w / ult.length) : null;
+  $('pIA').textContent = pct === null ? '–' : pct + '%'; $('bIA').style.width = (pct || 0) + '%';
+  $('strip').innerHTML = res.slice(-40).map(r => `<i style="background:${r === 1 ? 'var(--good)' : r === -1 ? 'var(--bad)' : '#cfd3ee'}"></i>`).join('');
+  padroes();
+}
+function padroes() {
+  if (hist.length < 8) { $('viu').classList.add('hidden'); return; }
+  const out = [];
+  // depois de cada jogada, o que você mais joga
+  for (let a = 0; a < 3; a++) {
+    const c = [0, 0, 0]; let t = 0;
+    for (let i = 1; i < hist.length; i++) if (hist[i - 1].v === a) { c[hist[i].v]++; t++; }
+    if (t >= 3) { const b = c.indexOf(Math.max(...c)); out.push({ p: c[b] / t, txt: `Depois de ${E[a]} você joga ${E[b]} <b>${Math.round(100 * c[b] / t)}%</b> das vezes` }); }
+  }
+  // depois de ganhar / perder
+  for (const [r, nome] of [[1, 'ganhar'], [-1, 'perder']]) {
+    let rep = 0, t = 0;
+    for (let i = 1; i < hist.length; i++) if (hist[i - 1].r === r) { t++; if (hist[i].v === hist[i - 1].v) rep++; }
+    if (t >= 3) out.push({ p: Math.max(rep, t - rep) / t, txt: `Depois de ${nome}, você ${rep / t >= .5 ? '<b>repete</b>' : '<b>troca</b>'} ${Math.round(100 * Math.max(rep, t - rep) / t)}% das vezes` });
+  }
+  const tot = [0, 0, 0]; hist.forEach(h => tot[h.v]++);
+  const fav = tot.indexOf(Math.max(...tot));
+  out.push({ p: tot[fav] / hist.length, txt: `Sua jogada favorita: ${E[fav]} (${Math.round(100 * tot[fav] / hist.length)}%). Aleatório seria 33%.` });
+  out.sort((a, b) => b.p - a.p);
+  $('padroes').innerHTML = out.slice(0, 3).map(o => `<p style="margin:6px 0">• ${o.txt}</p>`).join('');
+  $('viu').classList.remove('hidden');
+}
+document.querySelectorAll('.moves .btn').forEach(b => b.onclick = () => jogar(+b.dataset.m));
+document.addEventListener('keydown', e => { const k = { '1': 0, '2': 1, '3': 2 }[e.key]; if (k !== undefined) jogar(k); });
+$('reset').onclick = reset;
+reset();
+</script>
+</body>
+</html>

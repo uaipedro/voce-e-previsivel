@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>As Três Portas</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .doors { display: grid; gap: 10px; margin: 14px 0; }
+  .doors.n3 { grid-template-columns: repeat(3, 1fr); }
+  .doors.n10 { grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .door { aspect-ratio: 3/5; border-radius: 12px 12px 6px 6px; border: 3px solid #6b4a2b; cursor: pointer;
+          background: linear-gradient(180deg, #a86b3c, #7a4a26); display: grid; place-items: center; position: relative;
+          font-size: 34px; color: #ffe8c7; font-weight: 800; transition: transform .15s, filter .2s; padding: 0; }
+  .n10 .door { font-size: 20px; border-width: 2px; }
+  .door::after { content: ""; position: absolute; right: 12%; top: 52%; width: 9%; aspect-ratio: 1; border-radius: 50%; background: #ffd166; }
+  .door.sel { outline: 4px solid var(--accent); outline-offset: 3px; transform: translateY(-4px); }
+  .door.open { background: var(--bg2); border-color: var(--line); cursor: default; }
+  .door.open::after { display: none; }
+  .door.dim { filter: brightness(.6); }
+  .door .lbl { font-size: 15px; }
+  .phase { min-height: 54px; text-align: center; font-size: 18px; font-weight: 600; margin: 6px 0; }
+  .modes { display: flex; gap: 8px; justify-content: center; margin-top: 4px; }
+  .modes .btn { font-size: 14px; padding: 8px 12px; min-height: 38px; }
+  .modes .btn.on { background: var(--blue); color: #111; border-color: var(--blue); }
+</style>
+</head>
+<body>
+<header class="top"><a class="back" href="index.html">← Início</a><h1>🚪 As Três Portas</h1></header>
+<div class="wrap">
+  <p class="lead center">Atrás de uma porta tem um 🚗. Nas outras, um 🐐. Escolha uma.</p>
+  <div class="modes"><button class="btn ghost on" data-n="3">3 portas</button><button class="btn ghost" data-n="10">10 portas</button></div>
+  <div class="phase" id="phase">Escolha uma porta</div>
+  <div class="doors n3" id="doors"></div>
+  <div class="row hidden" id="choice">
+    <button class="btn ghost" id="ficar">Ficar com a minha</button>
+    <button class="btn" id="trocar">Trocar de porta</button>
+  </div>
+  <div class="row hidden" id="again"><button class="btn blue" id="novo">Jogar de novo</button></div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <b>Placar (<span id="modo">3</span> portas): quem ganhou?</b><span class="pill" id="nJogos"></span>
+    </div>
+    <div class="stat"><span>Ficou</span><div class="bar"><span id="bFicar" style="background:var(--bad)"></span></div><b id="pFicar">–</b></div>
+    <div class="stat"><span>Trocou</span><div class="bar"><span id="bTrocar" style="background:var(--good)"></span></div><b id="pTrocar">–</b></div>
+    <p class="muted small" id="detalhe" style="margin:4px 0 10px"></p>
+    <div class="row">
+      <button class="btn ghost" id="sim">🤖 Simular 1000 jogos</button>
+      <button class="btn ghost" id="zerar" style="flex:0 0 auto">Zerar</button>
+    </div>
+  </div>
+
+  <div class="card why">
+    <h3>O que está por trás</h3>
+    <p>Quando você escolhe, a chance de acertar é <b>1 em 3</b>. O apresentador <b>sabe</b> onde está o carro e sempre abre uma porta com bode.</p>
+    <p>Então os outros <b>2 em 3</b> se juntam na porta que sobrou. Trocar ganha <b>2 de cada 3 vezes</b>.</p>
+    <p class="muted small">Com 10 portas fica óbvio: você escolhe uma, ele abre 8 com bode e deixa só uma fechada. Você ficaria?</p>
+    <p class="muted small">Moral: nossa intuição erra com probabilidade. Por isso olhamos os <b>dados</b>.</p>
+  </div>
+</div>
+<script>
+const KEY = 'monty-stats-v2';
+const vazio = () => ({ ficar: [0, 0], trocar: [0, 0] }); // [vitórias, jogos]
+let ALL = { 3: vazio(), 10: vazio() };
+try { ALL = JSON.parse(localStorage.getItem(KEY)) || ALL; } catch (e) {}
+let S = ALL[3];
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(ALL)); } catch (e) {} };
+
+let n = 3, premio, escolha, fechada, fase;
+const $ = id => document.getElementById(id);
+
+function novo() {
+  premio = Math.floor(Math.random() * n); escolha = null; fechada = null; fase = 'escolher';
+  $('phase').textContent = 'Escolha uma porta';
+  $('choice').classList.add('hidden'); $('again').classList.add('hidden');
+  const d = $('doors'); d.className = 'doors n' + n; d.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const b = document.createElement('button'); b.className = 'door'; b.textContent = i + 1;
+    b.onclick = () => clique(i); d.appendChild(b);
+  }
+}
+function portas() { return [...document.querySelectorAll('.door')]; }
+function abre(i, revelar) {
+  const b = portas()[i]; b.classList.add('open', 'pop');
+  b.innerHTML = (i === premio ? '🚗' : '🐐') + (revelar ? '' : '');
+}
+function clique(i) {
+  if (fase !== 'escolher') return;
+  escolha = i; fase = 'decidir';
+  portas()[i].classList.add('sel');
+  // apresentador deixa fechada a do prêmio (ou uma aleatória, se você acertou)
+  if (i !== premio) fechada = premio;
+  else { const outras = [...Array(n).keys()].filter(k => k !== i); fechada = outras[Math.floor(Math.random() * outras.length)]; }
+  $('phase').textContent = 'O apresentador vai abrir ' + (n === 3 ? 'uma porta…' : (n - 2) + ' portas…');
+  setTimeout(() => {
+    for (let k = 0; k < n; k++) if (k !== escolha && k !== fechada) abre(k);
+    $('phase').innerHTML = n === 3 ? 'Ele abriu uma porta com bode. <b>Fica ou troca?</b>' : `Sobrou a sua (${escolha + 1}) e a ${fechada + 1}. <b>Fica ou troca?</b>`;
+    $('choice').classList.remove('hidden');
+  }, 600);
+}
+function decide(trocou) {
+  if (fase !== 'decidir') return;
+  fase = 'fim';
+  const final = trocou ? fechada : escolha;
+  portas().forEach(b => b.classList.remove('sel'));
+  portas()[final].classList.add('sel');
+  abre(escolha); abre(fechada);
+  portas().forEach((b, k) => { if (k !== final) b.classList.add('dim'); });
+  const ganhou = final === premio;
+  const k = trocou ? 'trocar' : 'ficar';
+  S[k][1]++; if (ganhou) S[k][0]++; save(); placar();
+  $('phase').innerHTML = ganhou ? '🎉 <b>Ganhou o carro!</b>' : '🐐 Ganhou um bode…';
+  $('choice').classList.add('hidden'); $('again').classList.remove('hidden');
+}
+function placar() {
+  const pct = a => a[1] ? Math.round(100 * a[0] / a[1]) : null;
+  const f = pct(S.ficar), t = pct(S.trocar);
+  $('pFicar').textContent = f === null ? '–' : f + '%'; $('bFicar').style.width = (f || 0) + '%';
+  $('pTrocar').textContent = t === null ? '–' : t + '%'; $('bTrocar').style.width = (t || 0) + '%';
+  $('modo').textContent = n;
+  $('nJogos').textContent = (S.ficar[1] + S.trocar[1]) + ' jogos';
+  $('detalhe').textContent = `Ficou: ${S.ficar[0]} de ${S.ficar[1]} · Trocou: ${S.trocar[0]} de ${S.trocar[1]}`;
+}
+$('ficar').onclick = () => decide(false);
+$('trocar').onclick = () => decide(true);
+$('novo').onclick = novo;
+$('zerar').onclick = () => { if (confirm('Zerar o placar?')) { ALL[n] = S = vazio(); save(); placar(); } };
+$('sim').onclick = () => {
+  const btn = $('sim'); btn.disabled = true;
+  let feitos = 0;
+  const passo = () => {
+    for (let j = 0; j < 25; j++) {
+      const p = Math.floor(Math.random() * n), e = Math.floor(Math.random() * n);
+      const trocou = Math.random() < .5, k = trocou ? 'trocar' : 'ficar';
+      S[k][1]++; if ((p === e) !== trocou) S[k][0]++;  // ficar ganha se acertou de cara; trocar ganha se errou
+    }
+    feitos += 25; placar();
+    if (feitos < 1000) setTimeout(passo, 30); else { save(); btn.disabled = false; }
+  };
+  passo();
+};
+document.querySelectorAll('.modes .btn').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.modes .btn').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); n = +b.dataset.n; S = ALL[n]; placar(); novo();
+});
+placar(); novo();
+</script>
+</body>
+</html>

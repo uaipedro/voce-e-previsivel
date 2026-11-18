@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quem é?</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .modes { display: flex; gap: 8px; margin: 4px 0 10px; }
+  .modes .btn { flex: 1; font-size: 15px; padding: 10px; min-height: 44px; }
+  .modes .btn.on { background: var(--blue); color: #111; border-color: var(--blue); }
+  .people { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .p { background: var(--card); border: 2px solid var(--line); border-radius: 12px; padding: 4px 2px 6px; text-align: center; cursor: pointer;
+       transition: opacity .3s, filter .3s, transform .3s; font-size: 13px; color: var(--text); }
+  .p svg { width: 100%; height: auto; display: block; }
+  .p.out { opacity: .18; filter: grayscale(1); transform: scale(.92); }
+  .p.win { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent); }
+  .q { font-size: 21px; font-weight: 800; text-align: center; margin: 6px 0 12px; }
+  .meter { display: flex; justify-content: space-between; align-items: baseline; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--line); background: var(--bg2); color: var(--text); border-radius: 99px; padding: 9px 12px; font-size: 14.5px; cursor: pointer; }
+  .chip:disabled { opacity: .35; }
+  .fb { min-height: 24px; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+<header class="top"><a class="back" href="index.html">← Início</a><h1>🕵️ Quem é?</h1></header>
+<div class="wrap">
+  <div class="modes">
+    <button class="btn ghost on" data-mode="ia">🤖 A IA adivinha</button>
+    <button class="btn ghost" data-mode="voce">🙋 Você adivinha</button>
+  </div>
+
+  <div class="card" id="painel"></div>
+  <div class="people" id="people"></div>
+
+  <div class="card why">
+    <h3>O que está por trás</h3>
+    <p>São 16 pessoas. Uma pergunta que divide o grupo <b>no meio</b> (8 sim, 8 não) sempre elimina metade, seja qual for a resposta.</p>
+    <p>16 → 8 → 4 → 2 → 1: <b>4 perguntas</b> bastam. Esse "cortar no meio" é 1 <b>bit</b> de informação.</p>
+    <p class="muted small">Perguntar "É a Ana?" logo de cara quase sempre desperdiça a pergunta. A IA não chuta: ela escolhe a pergunta que mais divide.</p>
+  </div>
+</div>
+<script>
+const HAIR = { preto: '#1d1d1f', castanho: '#6b4226', loiro: '#e8c26a', ruivo: '#c4531f' };
+const SHIRT = { azul: '#3a86ff', vermelha: '#ef476f', verde: '#06d6a0', amarela: '#ffd166' };
+const SKIN = ['#f3d2b3', '#e0ac7e', '#b9784a', '#7a4a2a'];
+// nome, cabelo, comprido, óculos, boné, barba, brinco, sorrindo, camisa, pele
+const RAW = [
+  ['Ana', 'loiro', 1, 1, 0, 0, 1, 1, 'azul', 1], ['Bruno', 'preto', 0, 0, 1, 1, 0, 1, 'vermelha', 3],
+  ['Carla', 'ruivo', 1, 0, 0, 0, 1, 0, 'verde', 0], ['Diego', 'castanho', 0, 1, 0, 1, 0, 0, 'amarela', 2],
+  ['Elisa', 'preto', 1, 0, 1, 0, 0, 1, 'amarela', 3], ['Fábio', 'careca', 0, 1, 0, 1, 0, 1, 'azul', 1],
+  ['Gabi', 'castanho', 1, 1, 1, 0, 1, 0, 'vermelha', 2], ['Hugo', 'loiro', 0, 0, 0, 0, 0, 0, 'verde', 0],
+  ['Isa', 'preto', 0, 0, 0, 0, 1, 1, 'verde', 2], ['João', 'castanho', 0, 0, 1, 0, 0, 1, 'azul', 1],
+  ['Lara', 'loiro', 1, 0, 0, 0, 0, 0, 'vermelha', 1], ['Marcos', 'ruivo', 0, 1, 0, 1, 0, 1, 'vermelha', 0],
+  ['Nina', 'castanho', 1, 0, 0, 0, 1, 1, 'azul', 3], ['Pedro', 'preto', 0, 1, 0, 0, 0, 0, 'verde', 3],
+  ['Paula', 'ruivo', 1, 0, 1, 0, 0, 1, 'amarela', 1], ['Rafa', 'careca', 0, 0, 0, 1, 1, 0, 'amarela', 2],
+];
+const P = RAW.map(([nome, cabelo, longo, oculos, bone, barba, brinco, sorri, camisa, pele], id) =>
+  ({ id, nome, cabelo, longo, oculos, bone, barba, brinco, sorri, camisa, pele }));
+const Q = [
+  ['Usa óculos?', p => p.oculos], ['Está de boné?', p => p.bone], ['Tem barba?', p => p.barba],
+  ['Usa brinco?', p => p.brinco], ['Está sorrindo?', p => p.sorri], ['Tem cabelo comprido?', p => p.longo],
+  ['Tem cabelo preto?', p => p.cabelo === 'preto'], ['Tem cabelo castanho?', p => p.cabelo === 'castanho'],
+  ['Tem cabelo loiro?', p => p.cabelo === 'loiro'], ['Tem cabelo ruivo?', p => p.cabelo === 'ruivo'],
+  ['É careca?', p => p.cabelo === 'careca'],
+  ['Camisa azul?', p => p.camisa === 'azul'], ['Camisa vermelha?', p => p.camisa === 'vermelha'],
+  ['Camisa verde?', p => p.camisa === 'verde'], ['Camisa amarela?', p => p.camisa === 'amarela'],
+].map(([t, f], i) => ({ i, t, f: p => !!f(p) }));
+
+function avatar(p) {
+  const h = HAIR[p.cabelo], s = SKIN[p.pele], dark = p.pele >= 2;
+  let g = `<svg viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="110" rx="10" fill="#262b4d"/>`;
+  if (p.longo) g += `<path d="M22 50 Q20 92 30 98 L70 98 Q80 92 78 50 Z" fill="${h}"/>`;
+  g += `<path d="M14 110 Q16 84 50 82 Q84 84 86 110 Z" fill="${SHIRT[p.camisa]}"/>`;
+  g += `<rect x="43" y="68" width="14" height="16" rx="4" fill="${s}"/>`;
+  g += `<ellipse cx="27" cy="52" rx="5" ry="7" fill="${s}"/><ellipse cx="73" cy="52" rx="5" ry="7" fill="${s}"/>`;
+  g += `<ellipse cx="50" cy="50" rx="23" ry="27" fill="${s}"/>`;
+  if (p.cabelo !== 'careca' && !p.bone) g += `<path d="M26 46 Q26 20 50 20 Q74 20 74 46 Q68 32 50 32 Q34 32 26 46 Z" fill="${h}"/>`;
+  if (p.barba) g += `<path d="M28 54 Q30 80 50 80 Q70 80 72 54 Q66 66 50 66 Q34 66 28 54 Z" fill="${p.cabelo === 'careca' ? '#3a2a1e' : h}" opacity=".95"/>`;
+  g += `<circle cx="41" cy="49" r="2.6" fill="#1b1b1b"/><circle cx="59" cy="49" r="2.6" fill="#1b1b1b"/>`;
+  if (p.oculos) g += `<g fill="none" stroke="#111" stroke-width="2.2"><circle cx="41" cy="49" r="7"/><circle cx="59" cy="49" r="7"/><path d="M48 49h4"/></g>`;
+  g += p.sorri ? `<path d="M41 61 Q50 70 59 61" fill="none" stroke="#5a1f1f" stroke-width="2.6" stroke-linecap="round"/>`
+               : `<path d="M43 63 H57" stroke="#5a1f1f" stroke-width="2.6" stroke-linecap="round"/>`;
+  if (p.brinco) g += `<circle cx="26" cy="61" r="3" fill="#ffd166"/><circle cx="74" cy="61" r="3" fill="#ffd166"/>`;
+  if (p.bone) g += `<path d="M26 42 Q26 18 50 18 Q74 18 74 42 Z" fill="#f77f00"/><path d="M50 40 Q78 38 88 44 Q70 46 50 44 Z" fill="#d36400"/>`;
+  return g + `</svg>`;
+}
+
+let mode = 'ia', vivos, perguntas, segredo, usadas;
+const $ = id => document.getElementById(id);
+function grade(onclick) {
+  $('people').innerHTML = '';
+  P.forEach(p => {
+    const d = document.createElement('div'); d.className = 'p' + (vivos.has(p.id) ? '' : ' out');
+    d.innerHTML = avatar(p) + p.nome; d.dataset.id = p.id;
+    if (onclick) d.onclick = () => onclick(p);
+    $('people').appendChild(d);
+  });
+}
+function marca() {
+  document.querySelectorAll('.p').forEach(d => d.classList.toggle('out', !vivos.has(+d.dataset.id)));
+}
+function melhorPergunta() {
+  const vs = P.filter(p => vivos.has(p.id));
+  let best = [], bd = 1e9;
+  for (const q of Q) {
+    if (usadas.has(q.i)) continue;
+    const sim = vs.filter(q.f).length, nao = vs.length - sim;
+    if (sim === 0 || nao === 0) continue;
+    const d = Math.abs(sim - nao);
+    if (d < bd) { bd = d; best = [q]; } else if (d === bd) best.push(q);
+  }
+  return best[Math.floor(Math.random() * best.length)];
+}
+function medidor(n) {
+  return `<div class="meter"><span class="muted small">Pessoas possíveis</span><b>${n} de 16</b></div>
+          <div class="bar" style="margin:6px 0 4px"><span style="width:${100 * n / 16}%;background:var(--blue)"></span></div>
+          <div class="muted small">Perguntas feitas: <b>${perguntas}</b></div>`;
+}
+
+// ===== modo 1: a IA adivinha =====
+let qAtual;
+function iaInicio() {
+  vivos = new Set(P.map(p => p.id)); perguntas = 0; usadas = new Set();
+  $('painel').innerHTML = `<div class="q">Escolha uma pessoa <u>em segredo</u> 🤫</div>
+    <p class="muted center">Guarde na cabeça (ou fale baixinho para um amigo). A IA vai descobrir em poucas perguntas.</p>
+    <button class="btn" style="width:100%" onclick="iaPergunta()">Escolhi! Pode perguntar</button>`;
+  grade(null);
+}
+function iaPergunta() {
+  const vs = P.filter(p => vivos.has(p.id));
+  if (vs.length === 1) return iaFim(vs[0]);
+  if (vs.length === 0) {
+    $('painel').innerHTML = `<div class="q">🤔 Ninguém combina com as respostas!</div><p class="center muted">Alguma resposta saiu errada. Acontece!</p>
+      <button class="btn" style="width:100%" onclick="iaInicio()">Tentar de novo</button>`; return;
+  }
+  qAtual = melhorPergunta();
+  const sim = vs.filter(qAtual.f).length;
+  $('painel').innerHTML = `${medidor(vs.length)}
+    <div class="q pop">${qAtual.t}</div>
+    <div class="row"><button class="btn good" onclick="iaResp(true)">Sim</button><button class="btn bad" onclick="iaResp(false)">Não</button></div>
+    <p class="muted small center" style="margin:10px 0 0">Por que essa? Ela separa <b>${sim}</b> de um lado e <b>${vs.length - sim}</b> do outro: quase metade/metade.</p>`;
+}
+function iaResp(r) {
+  perguntas++; usadas.add(qAtual.i);
+  P.forEach(p => { if (vivos.has(p.id) && qAtual.f(p) !== r) vivos.delete(p.id); });
+  marca(); iaPergunta();
+}
+function iaFim(p) {
+  document.querySelector(`.p[data-id="${p.id}"]`).classList.add('win');
+  $('painel').innerHTML = `${medidor(1)}<div class="q pop">É ${['Bruno','Diego','Fábio','Hugo','João','Marcos','Pedro','Rafa'].includes(p.nome) ? 'o' : 'a'} ${p.nome}! 🎯</div>
+    <p class="center">Precisei de <b>${perguntas}</b> perguntas.<br><span class="muted small">Com 16 pessoas, perguntas perfeitas precisam de log₂16 = 4.</span></p>
+    <button class="btn" style="width:100%" onclick="iaInicio()">De novo</button>`;
+}
+
+// ===== modo 2: você adivinha =====
+function voceInicio() {
+  vivos = new Set(P.map(p => p.id)); perguntas = 0; usadas = new Set();
+  segredo = P[Math.floor(Math.random() * P.length)];
+  grade(p => voceChuta(p));
+  voceTela('A IA escolheu alguém. Faça perguntas! (ou toque numa pessoa para chutar)');
+}
+function voceTela(fb) {
+  const vs = P.filter(p => vivos.has(p.id));
+  $('painel').innerHTML = `${medidor(vs.length)}
+    <p class="fb">${fb}</p>
+    <div class="chips" style="margin-top:8px">${Q.map(q => `<button class="chip" ${usadas.has(q.i) ? 'disabled' : ''} onclick="vocePergunta(${q.i})">${q.t}</button>`).join('')}</div>`;
+}
+function vocePergunta(i) {
+  const q = Q[i], vs = P.filter(p => vivos.has(p.id));
+  const r = q.f(segredo), antes = vs.length;
+  perguntas++; usadas.add(i);
+  vs.forEach(p => { if (q.f(p) !== r) vivos.delete(p.id); });
+  marca();
+  const depois = vivos.size, sim = vs.filter(q.f).length, pior = Math.max(sim, antes - sim);
+  let nota;
+  if (sim === 0 || sim === antes) nota = '😬 Essa pergunta não eliminou ninguém.';
+  else if (Math.abs(2 * sim - antes) <= 1) nota = '💯 Pergunta perfeita: dividiu no meio!';
+  else if (pior <= antes * 0.7) nota = '👍 Boa pergunta.';
+  else nota = `🎲 Arriscada: se desse azar, sobrariam ${pior}.`;
+  if (depois === 1) return voceFim(true);
+  voceTela(`<b>${q.t} ${r ? 'Sim' : 'Não'}!</b> ${antes} → ${depois} pessoas. ${nota}`);
+}
+function voceChuta(p) {
+  if (!vivos.has(p.id)) return;
+  perguntas++;
+  if (p.id === segredo.id) return voceFim(true);
+  vivos.delete(p.id); marca();
+  voceTela(`❌ Não é ${p.nome}. Chutar custa uma pergunta e elimina só 1 pessoa.`);
+}
+function voceFim() {
+  vivos = new Set([segredo.id]); marca();
+  document.querySelector(`.p[data-id="${segredo.id}"]`).classList.add('win');
+  $('painel').innerHTML = `${medidor(1)}<div class="q pop">Era ${segredo.nome}! 🎉</div>
+    <p class="center">Você usou <b>${perguntas}</b> perguntas. A IA usa <b>4 ou 5</b>.</p>
+    <button class="btn" style="width:100%" onclick="voceInicio()">De novo</button>`;
+}
+
+document.querySelectorAll('.modes .btn').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.modes .btn').forEach(x => x.classList.remove('on')); b.classList.add('on');
+  mode = b.dataset.mode; mode === 'ia' ? iaInicio() : voceInicio();
+});
+iaInicio();
+</script>
+</body>
+</html>

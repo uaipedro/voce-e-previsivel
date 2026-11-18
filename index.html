@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Você é previsível?</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .hero { padding: 28px 0 8px; }
+  .hero h1 { font-size: 34px; line-height: 1.1; margin: 0 0 10px; }
+  .hero h1 em { color: var(--accent); font-style: normal; }
+  a.game { display: flex; gap: 14px; align-items: center; text-decoration: none; color: var(--text); }
+  a.game:active { transform: scale(.98); }
+  .num { flex: 0 0 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; font-size: 28px; background: var(--bg2); }
+  a.game h2 { margin: 0; font-size: 19px; }
+  a.game p { margin: 2px 0 0; color: var(--muted); font-size: 14.5px; }
+  .step { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+  footer { color: var(--muted); font-size: 13px; padding: 24px 0; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <h1>Você é <em>previsível</em>?</h1>
+    <p class="lead">Quatro jogos curtos contra uma IA. Nenhuma mágica: só probabilidade, dados e boas perguntas.</p>
+  </section>
+
+  <a class="card game" href="monty.html">
+    <div class="num">🚪</div>
+    <div><div class="step">1 · Sua intuição falha</div><h2>As Três Portas</h2><p>Um prêmio, três portas. Trocar ou ficar?</p></div>
+  </a>
+  <a class="card game" href="ppt.html">
+    <div class="num">✊</div>
+    <div><div class="step">2 · Você tem padrões</div><h2>Pedra, Papel e Tesoura</h2><p>A IA aprende com as suas jogadas. Consegue ser aleatório?</p></div>
+  </a>
+  <a class="card game" href="quem.html">
+    <div class="num">🕵️</div>
+    <div><div class="step">3 · A pergunta certa</div><h2>Quem é?</h2><p>Escolha um personagem em segredo. A IA adivinha em poucas perguntas.</p></div>
+  </a>
+  <a class="card game" href="termo.html">
+    <div class="num">🔤</div>
+    <div><div class="step">4 · Informação</div><h2>Palavra Secreta</h2><p>Descubra a palavra de 5 letras. Você contra a IA.</p></div>
+  </a>
+
+  <div class="card why">
+    <h3>O que liga tudo isso?</h3>
+    <p>O ChatGPT escolhe a próxima palavra pela <b>probabilidade</b>. O TikTok aprende os seus <b>padrões</b>. Um bom sistema faz as <b>perguntas</b> que mais reduzem a dúvida.</p>
+    <p class="muted small">É isso que chamamos de IA: matemática, dados e computação. E dá para estudar tudo isso.</p>
+  </div>
+  <footer>Feito para a turma do 3º ano 💛</footer>
+</div>
+</body>
+</html>

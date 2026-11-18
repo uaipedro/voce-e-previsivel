@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Palavra Secreta</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .grid { display: grid; grid-template-rows: repeat(6, 1fr); gap: 6px; max-width: 330px; margin: 8px auto; }
+  .gr { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .cell { aspect-ratio: 1; border: 2px solid var(--line); border-radius: 10px; display: grid; place-items: center;
+          font-size: 28px; font-weight: 800; text-transform: uppercase; background: var(--bg2); }
+  .cell.filled { border-color: var(--muted); }
+  .cell.s2 { background: var(--good); border-color: var(--good); color: #0b2a20; }
+  .cell.s1 { background: var(--mid); border-color: var(--mid); color: #2b1a05; }
+  .cell.s0 { background: #3a3f5c; border-color: #3a3f5c; color: #cfd3ee; }
+  .cell.cur { border-color: var(--accent); }
+  .kb { max-width: 520px; margin: 10px auto 0; user-select: none; }
+  .kr { display: flex; gap: 5px; justify-content: center; margin: 5px 0; }
+  .k { flex: 1 1 0; max-width: 46px; height: 52px; border: 0; border-radius: 8px; background: #3b4270; color: var(--text);
+       font-size: 17px; font-weight: 700; cursor: pointer; padding: 0; }
+  .k.wide { max-width: 72px; flex: 1.6 1 0; font-size: 13px; }
+  .k.s2 { background: var(--good); color: #0b2a20; } .k.s1 { background: var(--mid); color: #2b1a05; } .k.s0 { background: #262a45; color: #6c7299; }
+  .msg { min-height: 24px; text-align: center; color: var(--accent); font-weight: 700; }
+  .ia h3 { margin: 0; font-size: 16px; }
+  .sug { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 10px; background: var(--bg2); margin: 6px 0; }
+  .sug.best { outline: 2px solid var(--good); }
+  .sug b { font-family: ui-monospace, monospace; font-size: 18px; letter-spacing: .1em; }
+  .hist div { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 15px; }
+  .hist div span:first-child { font-family: ui-monospace, monospace; letter-spacing: .1em; }
+  .toggle { display: flex; justify-content: center; margin: 6px 0; }
+</style>
+</head>
+<body>
+<header class="top"><a class="back" href="index.html">← Início</a><h1>🔤 Palavra Secreta</h1></header>
+<div class="wrap">
+  <p class="lead center small">6 tentativas para descobrir a palavra. 🟩 letra certa no lugar certo · 🟧 letra existe em outro lugar · ⬛ não existe.</p>
+  <div class="grid" id="grid"></div>
+  <div class="msg" id="msg"></div>
+  <div class="kb" id="kb"></div>
+  <div class="toggle"><button class="btn ghost" id="toggleIA">🤖 Mostrar o que a IA pensa</button></div>
+
+  <div class="card ia hidden" id="ia">
+    <h3>🤖 A IA está pensando…</h3>
+    <p id="restam" class="big" style="margin:8px 0 2px"></p>
+    <p class="muted small" id="restamTxt"></p>
+    <div id="sugs"></div>
+    <p class="muted small" id="lista"></p>
+  </div>
+
+  <div class="card hist hidden" id="histCard">
+    <h3 style="margin:0 0 6px;font-size:16px">Quanto cada tentativa ajudou</h3>
+    <div class="muted small" style="border:0">Palavras possíveis no começo: <span id="total"></span></div>
+    <div id="hist"></div>
+  </div>
+
+  <div class="card hidden center" id="fim">
+    <div class="big" id="fimTit"></div>
+    <p id="fimTxt"></p>
+    <div class="card" style="background:var(--bg2);text-align:left">
+      <b>🤖 Como a IA jogaria esta palavra:</b>
+      <div id="iaJogo" style="font-family:ui-monospace,monospace;letter-spacing:.08em;margin-top:6px"></div>
+    </div>
+    <button class="btn" onclick="novo()">Jogar de novo</button>
+  </div>
+
+  <div class="card why">
+    <h3>O que está por trás</h3>
+    <p>Cada tentativa é uma <b>pergunta</b>. Uma boa pergunta é aquela que, não importa a resposta, deixa <b>poucas palavras sobrando</b>.</p>
+    <p>A IA testa cada palavra possível e escolhe a que, em média, mais divide o grupo. Em matemática isso se chama <b>entropia</b> (Claude Shannon, 1948), e é medida em <b>bits</b>: cada bit corta as possibilidades pela metade.</p>
+  </div>
+</div>
+<script src="palavras.js"></script>
+<script>
+const W = PALAVRAS, N = W.length, MAX = 6;
+const FIRST = "TARSO";
+let alvo, tent, atual, acabou, mostrarIA = false, cand, histRows;
+
+// padrão de cores (0 cinza, 1 laranja, 2 verde) codificado em base 3
+function pat(g, t) {
+  const p = [0,0,0,0,0], usado = [0,0,0,0,0];
+  for (let i = 0; i < 5; i++) if (g[i] === t[i]) { p[i] = 2; usado[i] = 1; }
+  for (let i = 0; i < 5; i++) {
+    if (p[i]) continue;
+    for (let j = 0; j < 5; j++) if (!usado[j] && g[i] === t[j]) { p[i] = 1; usado[j] = 1; break; }
+  }
+  return p[0] + 3*p[1] + 9*p[2] + 27*p[3] + 81*p[4];
+}
+function cores(code) { const r = []; for (let i = 0; i < 5; i++) { r.push(code % 3); code = Math.floor(code / 3); } return r; }
+// correção do filtro do termoo original: uma palavra continua possível se,
+// sendo ela a resposta, geraria exatamente as mesmas cores
+function filtra(C, g, code) { return C.filter(w => pat(g, w) === code); }
+function entropia(g, C) {
+  const m = new Map();
+  for (const t of C) { const k = pat(g, t); m.set(k, (m.get(k) || 0) + 1); }
+  let h = 0; for (const c of m.values()) { const p = c / C.length; h -= p * Math.log2(p); }
+  return h;
+}
+function ranking(C) {
+  if (C.length <= 2) return C.map(w => ({ w, h: C.length === 2 ? 1 : 0, cand: true }));
+  const cs = new Set(C);
+  // testa todas as palavras como pergunta, não só as que ainda podem ser a resposta
+  const r = W.map(w => ({ w, h: entropia(w, C), cand: cs.has(w) }));
+  // empate: prefere palavra que ainda pode ser a resposta (pode ganhar já)
+  r.sort((a, b) => (b.h + (b.cand ? 0.05 : 0)) - (a.h + (a.cand ? 0.05 : 0)));
+  return r;
+}
+function melhor(C, primeira) { return primeira ? FIRST : ranking(C)[0].w; }
+function iaResolve(t) {
+  let C = W.slice(), seq = [], g;
+  for (let k = 0; k < 10; k++) {
+    g = melhor(C, k === 0); const code = pat(g, t);
+    seq.push({ g, code, antes: C.length });
+    if (g === t) break;
+    C = filtra(C, g, code);
+  }
+  return seq;
+}
+
+const grid = document.getElementById('grid');
+function desenha() {
+  grid.innerHTML = '';
+  for (let r = 0; r < MAX; r++) {
+    const row = document.createElement('div'); row.className = 'gr';
+    const t = tent[r];
+    for (let c = 0; c < 5; c++) {
+      const d = document.createElement('div'); d.className = 'cell';
+      if (t) { d.textContent = t.g[c]; d.classList.add('s' + cores(t.code)[c]); }
+      else if (r === tent.length && !acabou) { d.textContent = atual[c] || ''; if (atual[c]) d.classList.add('filled'); if (c === atual.length) d.classList.add('cur'); }
+      row.appendChild(d);
+    }
+    grid.appendChild(row);
+  }
+  // teclado
+  const st = {};
+  for (const t of tent) cores(t.code).forEach((s, i) => { const L = t.g[i]; st[L] = Math.max(st[L] ?? -1, s); });
+  document.querySelectorAll('.k[data-k]').forEach(b => { b.className = 'k' + (b.dataset.k.length > 1 ? ' wide' : '') + (st[b.dataset.k] !== undefined ? ' s' + st[b.dataset.k] : ''); });
+}
+function teclado() {
+  const kb = document.getElementById('kb');
+  ["QWERTYUIOP", "ASDFGHJKL", "+ZXCVBNM-"].forEach(l => {
+    const r = document.createElement('div'); r.className = 'kr';
+    for (const ch of l) {
+      const b = document.createElement('button');
+      const k = ch === '+' ? 'ENTER' : ch === '-' ? 'DEL' : ch;
+      b.dataset.k = k; b.textContent = k === 'ENTER' ? 'ENVIAR' : k === 'DEL' ? '⌫' : k;
+      b.className = 'k' + (k.length > 1 ? ' wide' : '');
+      b.onclick = () => tecla(k); r.appendChild(b);
+    }
+    kb.appendChild(r);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const k = e.key.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+    if (k === 'ENTER') tecla('ENTER'); else if (k === 'BACKSPACE') tecla('DEL'); else if (/^[A-Z]$/.test(k)) tecla(k);
+  });
+}
+function msg(t) { document.getElementById('msg').textContent = t; }
+function tecla(k) {
+  if (acabou) return;
+  msg('');
+  if (k === 'DEL') atual = atual.slice(0, -1);
+  else if (k === 'ENTER') {
+    if (atual.length < 5) { msg('Faltam letras'); return; }
+    const g = atual, code = pat(g, alvo), antes = cand.length;
+    tent.push({ g, code });
+    cand = filtra(cand, g, code);
+    histRows.push({ g, antes, depois: cand.length });
+    atual = '';
+    if (g === alvo) fim(true); else if (tent.length === MAX) fim(false);
+    desenha(); pensaIA(); hist();
+    return;
+  } else if (atual.length < 5) atual += k;
+  desenha();
+}
+function hist() {
+  const hc = document.getElementById('histCard');
+  hc.classList.toggle('hidden', histRows.length === 0);
+  document.getElementById('total').textContent = N;
+  document.getElementById('hist').innerHTML = histRows.map(h =>
+    `<div><span>${h.g}</span><span>${h.antes} → <b>${h.depois}</b> ${h.depois === 1 ? '🎯' : ''}</span></div>`).join('');
+}
+function pensaIA() {
+  const box = document.getElementById('ia');
+  box.classList.toggle('hidden', !mostrarIA || acabou);
+  if (!mostrarIA || acabou) return;
+  document.getElementById('restam').textContent = cand.length + (cand.length === 1 ? ' palavra possível' : ' palavras possíveis');
+  document.getElementById('restamTxt').textContent = `≈ ${Math.log2(cand.length).toFixed(1)} bits de dúvida (cada bit = cortar pela metade)`;
+  document.getElementById('sugs').innerHTML = '<p class="muted">calculando…</p>';
+  document.getElementById('lista').textContent = cand.length <= 12 ? 'Possíveis: ' + cand.join(', ') : '';
+  setTimeout(() => {
+    let top;
+    if (tent.length === 0) top = [{ w: FIRST, h: entropia(FIRST, W) }, { w: 'TOSAR', h: entropia('TOSAR', W) }, { w: 'SERIO', h: entropia('SERIO', W) }];
+    else top = ranking(cand).slice(0, 3);
+    document.getElementById('sugs').innerHTML = '<p class="small muted" style="margin:10px 0 0">Melhores próximas tentativas:</p>' + top.map((s, i) => {
+      const sobra = Math.max(1, cand.length / Math.pow(2, s.h));
+      return `<div class="sug ${i === 0 ? 'best' : ''}"><b>${s.w}</b><span class="small">em média sobram <b>~${sobra < 10 ? sobra.toFixed(1) : Math.round(sobra)}</b> · ${s.h.toFixed(2)} bits</span></div>`;
+    }).join('');
+  }, 30);
+}
+function fim(ganhou) {
+  acabou = true;
+  const seq = iaResolve(alvo);
+  document.getElementById('fim').classList.remove('hidden');
+  document.getElementById('fimTit').textContent = ganhou ? `🎉 Acertou em ${tent.length}!` : `A palavra era ${alvo}`;
+  const ia = seq.length;
+  document.getElementById('fimTxt').innerHTML = ganhou
+    ? (tent.length < ia ? 'Você foi <b>mais rápido</b> que a IA! 😎' : tent.length === ia ? 'Empate com a IA!' : `A IA precisaria de <b>${ia}</b>.`)
+    : `A IA acharia em <b>${ia}</b> tentativas.`;
+  document.getElementById('iaJogo').innerHTML = seq.map(s =>
+    `<div>${cores(s.code).map(c => ['⬛','🟧','🟩'][c]).join('')} ${s.g} <span class="muted small">(${s.antes} possíveis)</span></div>`).join('');
+  document.getElementById('ia').classList.add('hidden');
+}
+function novo() {
+  alvo = W[Math.floor(Math.random() * N)];
+  tent = []; atual = ''; acabou = false; cand = W.slice(); histRows = [];
+  document.getElementById('fim').classList.add('hidden');
+  msg(''); desenha(); hist(); pensaIA();
+}
+document.getElementById('toggleIA').onclick = () => {
+  mostrarIA = !mostrarIA;
+  document.getElementById('toggleIA').textContent = mostrarIA ? '🙈 Esconder a IA' : '🤖 Mostrar o que a IA pensa';
+  pensaIA();
+};
+teclado(); novo();
+</script>
+</body>
+</html>
