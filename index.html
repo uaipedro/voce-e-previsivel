@@ -37,6 +37,21 @@
            backdrop-filter: blur(10px); }
   .sobre h3 { margin: 0 0 6px; color: #ffcf5a; font-size: 16px; }
   .sobre p { margin: 6px 0; font-size: 15px; }
+  .qrcanto { position: absolute; right: 18px; bottom: 18px; pointer-events: auto; cursor: pointer; text-align: center;
+             background: rgba(16, 12, 48, .78); border: 1px solid rgba(160, 140, 255, .4); border-radius: 18px; padding: 12px 12px 10px;
+             backdrop-filter: blur(8px); }
+  .qrcanto .qrbox { background: #fff; padding: 8px; border-radius: 10px; }
+  .qrcanto .qrbox img, .qrcanto .qrbox canvas { display: block; width: 150px !important; height: 150px !important; }
+  .qrcanto b { display: block; margin-top: 8px; font-family: "Space Grotesk", system-ui, sans-serif; font-size: 15px; }
+  .qrcanto small { color: #b9b4ea; font-size: 12px; }
+  @media (max-width: 899px), (max-height: 560px) { .qrcanto { display: none; } }
+  .qrtela { position: fixed; inset: 0; z-index: 20; background: rgba(7, 6, 26, .94); display: grid; place-items: center; pointer-events: auto; padding: 16px; }
+  .qrtela > div { text-align: center; }
+  .qrtela .qrbox { background: #fff; padding: 14px; border-radius: 16px; display: inline-block; }
+  .qrtela .qrbox img, .qrtela .qrbox canvas { display: block; width: min(78vw, 62vh, 460px) !important; height: auto !important; }
+  .qrtela h2 { font-family: "Space Grotesk", system-ui, sans-serif; font-size: clamp(24px, 5vw, 40px); margin: 0 0 14px; }
+  .qrtela p { color: #b9b4ea; margin: 12px 0; font-size: 17px; }
+  .qrtela button { font: inherit; font-size: 16px; color: #fff; background: transparent; border: 1px solid rgba(160, 140, 255, .5); border-radius: 99px; padding: 10px 20px; cursor: pointer; }
   .veu { position: fixed; inset: 0; background: #07061a; opacity: 1; transition: opacity .8s ease; pointer-events: none; }
   .veu.fora { opacity: 0; }
 </style>
@@ -55,9 +70,23 @@
     <p>Uma máquina que decide bem usa <b>probabilidade</b> em vez de palpite, aprende <b>padrões</b> a partir de dados e faz as <b>perguntas</b> que mais reduzem a dúvida.</p>
     <p class="muted small">É isso que chamamos de IA: matemática, dados e computação. E dá para estudar tudo isso.</p>
   </div>
+  <div class="qrcanto" id="qrCanto" title="Mostrar o QR em tela cheia">
+    <div class="qrbox" id="qrPeq"></div>
+    <b>📱 Jogue no seu celular</b>
+    <small>aponte a câmera aqui</small>
+  </div>
   <div class="rodape">
     <button id="btnSobre">💡 O que é isso?</button>
+    <button id="btnQr">📱 QR</button>
     <a href="simples.html">Versão leve</a>
+  </div>
+</div>
+<div class="qrtela hidden" id="qrTela">
+  <div>
+    <h2>Jogue no seu celular 📱</h2>
+    <div class="qrbox" id="qrGde"></div>
+    <p>uaipedro.github.io/voce-e-previsivel</p>
+    <button id="qrFechar">Fechar</button>
   </div>
 </div>
 <div class="veu" id="veu"></div>
@@ -68,6 +97,22 @@
     try { const c = document.createElement('canvas'); if (!(c.getContext('webgl2') || c.getContext('webgl'))) throw 0; }
     catch (e) { location.replace('simples.html'); }
     setTimeout(() => { if (!window.__hubOK) location.replace('simples.html'); }, 9000);
+  })();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  (function () {
+    const URL_SITE = 'https://uaipedro.github.io/voce-e-previsivel/';
+    let feitoGde = false;
+    function qr(el, px) { try { new QRCode(el, { text: URL_SITE, width: px, height: px, correctLevel: QRCode.CorrectLevel.M }); } catch (e) {} }
+    if (window.QRCode) qr(document.getElementById('qrPeq'), 300);
+    const tela = document.getElementById('qrTela');
+    function abrir() { if (!feitoGde && window.QRCode) { qr(document.getElementById('qrGde'), 900); feitoGde = true; } tela.classList.remove('hidden'); }
+    document.getElementById('btnQr').onclick = abrir;
+    document.getElementById('qrCanto').onclick = abrir;
+    document.getElementById('qrFechar').onclick = () => tela.classList.add('hidden');
+    tela.addEventListener('click', e => { if (e.target === tela) tela.classList.add('hidden'); });
+    addEventListener('keydown', e => { if (e.key === 'Escape') tela.classList.add('hidden'); });
   })();
 </script>
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js" } }</script>
