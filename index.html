@@ -73,6 +73,7 @@
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js" } }</script>
 <script type="module">
 import * as THREE from 'three';
+window.__hubOK = true;   // three.js carregou: não precisa da versão leve
 
 const PORTAIS = [
   { href: 'monty.html', passo: '1 · intuição', nome: '🚪 As Três Portas', cor: 0xffcf5a },
@@ -300,6 +301,7 @@ addEventListener('pageshow', () => { saindo = false; voo = null; camera.position
 // ---------- loop ----------
 const relogio = new THREE.Clock(), v3 = new THREE.Vector3(), tmp = new THREE.Vector3();
 const olho = new THREE.Vector3(0, 0, 1);
+let primeiro = false;
 function frame() {
   const dt = Math.min(relogio.getDelta(), .05), t = relogio.elapsedTime;
   if (!arrastando) { vel *= .94; rot += vel + dt * .07; }
@@ -353,7 +355,7 @@ function frame() {
     camera.lookAt(0, retrato ? .2 : .1, 0);
   }
   renderer.render(scene, camera);
-  if (!window.__hubOK) { window.__hubOK = true; document.getElementById('veu').classList.add('fora'); }
+  if (!primeiro) { primeiro = true; document.getElementById('veu').classList.add('fora'); }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
